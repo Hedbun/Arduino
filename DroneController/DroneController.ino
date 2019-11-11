@@ -8,43 +8,43 @@ BTLE btle(&radio);                                                            //
 char BLEname[17];                                                     // массив для (имя-BLE) - максимальная длина (16)! символов
 #define PASSWORD1   "S7"   // Замените! Dmitry OSIPOV на имя вашего устройства. Пароль - максимальная длина (14)! символов
 #define PASSWORD2   "J5"
-int value = 0;
+int sliderValueInt = 0;
 
 void setup() 
 {
-  ESC1.attach(27, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
-  radio.begin();
+  //ESC1.attach(27, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
   Serial.begin(9600);
   
   pinMode(25, OUTPUT); //nrf VSC
   digitalWrite(25, HIGH); //nrf VSC
-  String str = "";
-  str = (String) "_hedbun_";                        // собираем разные типы данных, в строку
-  str.toCharArray(BLEname, sizeof(BLEname));        
-  btle.begin(BLEname);
+  
+  btle.begin("");
 }          
                                                            
 void loop() 
 {
   if (btle.listen()) 
-  {                                        
-    String strData;
-    for (uint8_t i = 2; i < (btle.buffer.pl_size) - 6; i++) 
-    { 
-      strData+= (char(btle.buffer.payload[i]));       
-    }       
+  {
+    String sliderValue = "";
+    String deviceName = "";
+    int bytesToSkip = 0;
+    bytesToSkip = btle.buffer.payload[0];
+    //Serial.println(bytesToSkip);
+    for (uint8_t i = 2; i < bytesToSkip + 1; i++)
+    {
+      deviceName += char(btle.buffer.payload[i]);
+    }    
 
-    if(strData.startsWith(PASSWORD1) or strData.startsWith(PASSWORD2))
-    {   
-      String valueStr;   
-      for (uint8_t i = 8; i < (btle.buffer.pl_size) - 6; i++) 
-      { 
-        valueStr += char(btle.buffer.payload[i]); // (value between 0 and 180)
-      } 
-      //Serial.print("Str: ");Serial.println(valueStr);
-      value = valueStr.toInt();
-    }
+    if (deviceName == PASSWORD1 or deviceName == PASSWORD2)
+    {
+      bytesToSkip = bytesToSkip + 1 + 4;
+      for (uint8_t i = bytesToSkip; i < (btle.buffer.pl_size) - 6; i++)
+      {
+        sliderValue += char(btle.buffer.payload[i]);
+      }
+      sliderValueInt = sliderValue.toInt();
+      Serial.print(deviceName); Serial.print(": "); Serial.println(sliderValueInt);
+    }        
   }
-  Serial.print("Int: ");Serial.println(value);
-  ESC1.write(value);    // Send the signal to the ESC
+  //ESC1.write(sliderValueInt);    // Send the signal to the ESC 
 }
