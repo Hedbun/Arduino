@@ -1,23 +1,24 @@
 /* nRF24L01_BLE_Recv_Send_v.1_20170519 */
-#include <RF24.h>    // Подключаем библиотеку, для работы с nRF24L01 (SPI in Arduino Uno/Nano: MOSI pin 11, MISO pin 12, SCK pin 13)
-#include <BTLE.h>                                 // Подключаем библиотеку "BTLE", для превращения (nRF24L01-радио) в (nRF24L01-BLE)
+#include <RF24.h>
+#include <BTLE.h> // converts from (nRF24L01-radio) to (nRF24L01-BLE)
 #include <Servo.h>
-Servo ESC1;
-RF24 radio(11,12);                 // Создаём объект radio для работы с библиотекой RF24, указывая номера выводов nRF24L01 (CE, CSN)
-BTLE btle(&radio);                                                            // Создаём объект btle для работы с библиотекой "BTLE"
-char BLEname[17];                                                     // массив для (имя-BLE) - максимальная длина (16)! символов
-#define PASSWORD1   "S7"   // Замените! Dmitry OSIPOV на имя вашего устройства. Пароль - максимальная длина (14)! символов
+Servo ESC1; // library for working with ESC(electronic speed controller) that controls brushless DC motor
+RF24 radio(11,12); // (CE, CSN) pins
+BTLE btle(&radio);
+#define PASSWORD1   "S7"
 #define PASSWORD2   "J5"
-int sliderValueInt = 0;
+int motorSpeedInt = 0; // by default, 0 speed is provided to ESC in the main loop
 
 void setup() 
 {
   //ESC1.attach(27, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
   Serial.begin(9600);
-  
-  pinMode(25, OUTPUT); //nrf VSC
-  digitalWrite(25, HIGH); //nrf VSC
-  
+
+  // providing power to the nRF24L01 unit, that has VCC pin connected to 25 pin on Arduino Due
+  pinMode(25, OUTPUT);
+  digitalWrite(25, HIGH);
+
+  // initializing nRF24L01 unit
   btle.begin("");
 }          
                                                            
@@ -25,26 +26,28 @@ void loop()
 {
   if (btle.listen()) 
   {
-    String sliderValue = "";
-    String deviceName = "";
-    int bytesToSkip = 0;
-    bytesToSkip = btle.buffer.payload[0];
+    String motorSpeed = ""; // a value received from external BLE device(mobile phone) that will be supplied to ESC. Represents speed of the motor.
+    String deviceName = ""; // name of the BLE device.
+    int bytesToSkip = 0;    
+    bytesToSkip = btle.buffer.payload[0]; // first byte of the packet tells how many bytes till the end of the device name
     //Serial.println(bytesToSkip);
+    // reading device name
     for (uint8_t i = 2; i < bytesToSkip + 1; i++)
     {
       deviceName += char(btle.buffer.payload[i]);
     }    
-
-    if (deviceName == PASSWORD1 or deviceName == PASSWORD2)
-    {
-      bytesToSkip = bytesToSkip + 1 + 4;
-      for (uint8_t i = bytesToSkip; i < (btle.buffer.pl_size) - 6; i++)
+    
+    if (deviceName == PASSWORD1 or deviceName == PASSWORD2) // for now we use device name to ignore data from other devices that are non pre-defined in this code. Will need to find better solution later.
+    {      
+      bytesToSkip = bytesToSkip + 1 + 4; // we know that advertisment packet contains device name + manufacturer data, so here we are skipping right to the start of the motor speed value
+      // reading motor speed
+      for (uint8_t i = bytesToSkip; i < (btle.buffer.pl_size) - 6; i++) // motor speed is the last piece of data in the packet, so reading till the end
       {
-        sliderValue += char(btle.buffer.payload[i]);
+        motorSpeed += char(btle.buffer.payload[i]);
       }
-      sliderValueInt = sliderValue.toInt();
-      Serial.print(deviceName); Serial.print(": "); Serial.println(sliderValueInt);
+      motorSpeedInt = motorSpeed.toInt();
+      Serial.print(deviceName); Serial.print(": "); Serial.println(motorSpeedInt);
     }        
   }
-  //ESC1.write(sliderValueInt);    // Send the signal to the ESC 
+  //ESC1.write(motorSpeedInt);    // Send the signal to the ESC 
 }
