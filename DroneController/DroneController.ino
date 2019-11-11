@@ -1,4 +1,3 @@
-/* nRF24L01_BLE_Recv_Send_v.1_20170519 */
 #include <RF24.h>
 #include <BTLE.h> // converts from (nRF24L01-radio) to (nRF24L01-BLE)
 #include <Servo.h>
