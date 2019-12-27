@@ -6,9 +6,12 @@
 
 #include <RF24.h>
 #include <BTLE.h> // converts from (nRF24L01-radio) to (nRF24L01-BLE)
-#include <Servo.h>
-Servo ESC1; // library for working with ESC(electronic speed controller) that controls brushless DC motor
-RF24 radio(11, 12); // (CE, CSN) pins
+#include <Servo.h> // library for working with ESC(electronic speed controller) that controls brushless DC motor
+Servo ESC1;
+Servo ESC2;
+Servo ESC3;
+Servo ESC4;
+RF24 radio(55, 56); // (CE, CSN) pins
 BTLE btle(&radio);
 constexpr auto PASSWORD1 = "S7";
 constexpr auto PASSWORD2 = "J5";
@@ -17,12 +20,15 @@ int motorSpeedInt = 0; // by default, 0 speed is provided to ESC in the main loo
 // the setup function runs once when you press reset or power the board
 void setup() 
 {
-	//ESC1.attach(27, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
+	ESC1.attach(29, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
+	ESC2.attach(28, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
+	ESC3.attach(26, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   
+	ESC4.attach(27, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds)   		
 	Serial.begin(9600);
 
-	// providing power to the nRF24L01 unit, that has VCC pin connected to 25 pin on Arduino Due
-	pinMode(25, OUTPUT);
-	digitalWrite(25, HIGH);
+	// providing power to the nRF24L01 unit, that has VCC pin connected to 57 pin on Arduino Due
+	pinMode(57, OUTPUT);
+	digitalWrite(57, HIGH);
 
 	// initializing nRF24L01 unit
 	btle.begin("");
@@ -56,6 +62,9 @@ void loop()
 			Serial.print(deviceName); Serial.print(": "); Serial.println(motorSpeedInt);
 		}
 	}
-	//ESC1.write(motorSpeedInt);    // Send the signal to the ESC 
+	ESC1.write(motorSpeedInt);    // Send the signal to the ESC 
+	ESC2.write(motorSpeedInt);    // Send the signal to the ESC 
+	ESC3.write(motorSpeedInt);    // Send the signal to the ESC 
+	ESC4.write(motorSpeedInt);    // Send the signal to the ESC 
   
 }
