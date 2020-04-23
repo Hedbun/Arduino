@@ -7,6 +7,7 @@
 #include <RF24.h>
 #include <BTLE.h> // converts from (nRF24L01-radio) to (nRF24L01-BLE)
 #include <Servo.h> // library for working with ESC(electronic speed controller) that controls brushless DC motor
+
 Servo ESC1;
 Servo ESC2;
 Servo ESC3;
@@ -16,6 +17,7 @@ BTLE btle(&radio);
 constexpr auto PASSWORD1 = "S7";
 constexpr auto PASSWORD2 = "J5";
 int motorSpeedInt = 0; // by default, 0 speed is provided to ESC in the main loop
+int motorStopTimer = 0; // timer time for emergency motor stop
 
 // the setup function runs once when you press reset or power the board
 void setup() 
@@ -59,12 +61,26 @@ void loop()
 				motorSpeed += char(btle.buffer.payload[i]);
 			}
 			motorSpeedInt = motorSpeed.toInt();
+			motorStopTimer = 0; // reset timer
 			Serial.print(deviceName); Serial.print(": "); Serial.println(motorSpeedInt);
 		}
 	}
+
+	motorStopTimer++;
+	if (motorStopTimer >= 100)
+	{
+		motorSpeedInt = 0;
+		motorStopTimer = 0;
+	}
+	
 	ESC1.write(motorSpeedInt);    // Send the signal to the ESC 
 	ESC2.write(motorSpeedInt);    // Send the signal to the ESC 
 	ESC3.write(motorSpeedInt);    // Send the signal to the ESC 
 	ESC4.write(motorSpeedInt);    // Send the signal to the ESC 
   
+	/*Serial.print(millis());
+	Serial.print(" - ");
+	Serial.print(motorStopTimer);
+	Serial.print(" - ");
+	Serial.println(motorSpeedInt);*/
 }
